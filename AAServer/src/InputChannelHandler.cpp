@@ -7,6 +7,8 @@
 #include <fmt/ranges.h>
 #include <iostream>
 #include <vector>
+#include <thread>
+#include "InputEvent.pb.h"
 
 #include <linux/types.h>
 
@@ -16,6 +18,14 @@ InputChannelHandler::InputChannelHandler(uint8_t channelId,
                                          std::vector<int> availableButtons)
     : ChannelHandler(channelId), available_buttons(availableButtons) {
   cout << "InputChannelHandler: " << (int)channelId << endl;
+
+  _sender.SetScreenSize(800, 480);
+  std::thread([this](){
+    openChannel();
+    gotHandshakeResponse = false;
+    sendHandshakeRequest();
+    expectHandshakeResponse();
+  }).detach();
 }
 InputChannelHandler::~InputChannelHandler() {}
 
@@ -55,8 +65,29 @@ bool InputChannelHandler::handleMessageFromHeadunit(const Message &message) {
       gotHandshakeResponse = true;
       messageHandled = true;
     } else if (messageType == InputChannelMessageType::Event) {
-      for (auto &&rc : registered_clients)
-        sendToClient(rc, channelId, 0x00, message.content);
+      class tag::aas::InputEvent ie;
+      // TODO: discover why we need to skip two bytes
+      ie.ParseFromArray(&message.content[2], message.content.size()-2);
+      if (ie.has_touch_event()) {
+        int x, y;
+        for (auto tl : ie.touch_event().touch_location()) {
+          x = tl.x();
+          y = tl.y();
+          // What is tl.pid()?
+        }
+        bool active = _dragging;
+        if (ie.touch_event().touch_action() == tag::aas::TouchAction::Press ||
+            ie.touch_event().touch_action() == tag::aas::TouchAction::Down) {
+              active = true;
+        }
+        if (ie.touch_event().touch_action() == tag::aas::TouchAction::Release ||
+            ie.touch_event().touch_action() == tag::aas::TouchAction::Up) {
+              active = false;
+        }
+        if (active || _dragging)
+          _sender.SendEvent(active, x, y);
+        _dragging = active;
+      }
       messageHandled = true;
     }
   }
@@ -68,12 +99,7 @@ bool InputChannelHandler::handleMessageFromClient(int clientId,
                                                   uint8_t channelId,
                                                   bool specific,
                                                   const vector<uint8_t> &data) {
-  registered_clients.insert(clientId);
-  ChannelHandler::openChannel();
-  gotHandshakeResponse = false;
-  sendHandshakeRequest();
-  expectHandshakeResponse();
-  return true;
+  return false;
 }
 
 void InputChannelHandler::disconnected(int clientId) {

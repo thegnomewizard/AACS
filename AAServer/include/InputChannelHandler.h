@@ -5,6 +5,7 @@
 #include "ChannelHandler.h"
 #include <set>
 #include <vector>
+#include "InputSender.h"
 
 class InputChannelHandler : public ChannelHandler {
   void sendHandshakeRequest();
@@ -14,6 +15,8 @@ class InputChannelHandler : public ChannelHandler {
   std::condition_variable cv;
   std::set<int> registered_clients;
   std::vector<int> available_buttons;
+  InputSender _sender;
+  bool _dragging;
 
 public:
   InputChannelHandler(uint8_t channelId, std::vector<int> available_buttons);

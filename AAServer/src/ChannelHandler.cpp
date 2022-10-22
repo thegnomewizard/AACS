@@ -5,6 +5,9 @@
 #include "enums.h"
 #include "utils.h"
 #include <linux/types.h>
+#include <iostream>
+
+using namespace std;
 
 ChannelHandler::ChannelHandler(uint8_t _channelId) : channelId(_channelId) {}
 ChannelHandler::~ChannelHandler() {}
@@ -23,6 +26,7 @@ bool ChannelHandler::handleMessageFromHeadunit(const Message &message) {
     const __u16 *shortView = (const __u16 *)(msg.data());
     auto messageType = be16_to_cpu(shortView[0]);
     if (messageType == MessageType::ChannelOpenResponse) {
+//      cout << "Channel " << (int)channelId << " open" << endl;
       gotChannelOpenResponse = true;
       messageHandled = true;
     }

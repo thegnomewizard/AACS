@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <string>
 #include <sys/stat.h>
-#include <gst/gst.h>
 #include <vector>
 #pragma once
 
@@ -16,9 +15,6 @@
 #endif
 #define be16_to_cpu(x) be16toh(x)
 
-#define GSTCHECK(x) GstCheck(x, __LINE__)
-
-void GstCheck(gboolean returnCode, int line);
 std::string rr(const std::string &str);
 std::string sr(const std::string &str);
 ssize_t checkError(ssize_t ret, const std::vector<int> &ignoredErrors);

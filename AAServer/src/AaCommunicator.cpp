@@ -29,6 +29,8 @@
 #include <pcap/pcap.h>
 #include <stdexcept>
 
+#include <time.h>
+
 #define CRT_FILE "android_auto.crt"
 #define PRIVKEY_FILE "android_auto.key"
 #define DHPARAM_FILE "dhparam.pem"
@@ -38,6 +40,10 @@ using namespace boost::filesystem;
 using namespace tag::aas;
 
 void AaCommunicator::logMessage(const Message &msg, bool direction) {
+  // printf("SEND %i (%x):", msg.channel, msg.flags);
+  // for (uint8_t x : msg.content)
+  //   printf(" %02x", x);
+  // printf("\n");
   if (!pdumper)
     return;
   int pktSize = 8 + msg.content.size();
@@ -68,6 +74,10 @@ void AaCommunicator::sendMessage(uint8_t channel, uint8_t flags,
   {
     std::unique_lock<std::mutex> lk(sendQueueMutex);
     sendQueue.push_back(msg);
+    if (sendQueue.size() > 1) {
+      printf("[%i]", sendQueue.size());
+    } //else printf("<%i>", (int)msg.content.size());
+      fflush(stdout);
   }
   sendQueueNotEmpty.notify_all();
 }
@@ -369,13 +379,11 @@ ssize_t AaCommunicator::getMessage(int fd, void *buf, size_t nbytes) {
   }
 
   // it should work up to about 16k, but we might get some weird hardware issues
-  int maxSize = 2000;
+  int maxSize = 0x1000 - 100; // SSL consumes some space, as well as the header
 
   auto msg = sendQueue.front();
   uint32_t totalLength = msg.content.size();
-  std::vector<uint8_t> msgBytes;
   if (msg.flags & EncryptionType::Encrypted) {
-    msgBytes.push_back(msg.channel);
     auto flags = msg.flags;
     std::vector<uint8_t>::iterator contentBegin;
     std::vector<uint8_t>::iterator contentEnd;
@@ -410,7 +418,6 @@ ssize_t AaCommunicator::getMessage(int fd, void *buf, size_t nbytes) {
       flags = flags | FrameType::Last;
       sendQueue.pop_front();
     }
-    msgBytes.push_back(flags);
     auto ret = SSL_write(ssl, contentBegin.base(), contentEnd - contentBegin);
     if (ret < 0) {
       throw std::runtime_error("SSL_write error");
@@ -435,8 +442,21 @@ ssize_t AaCommunicator::getMessage(int fd, void *buf, size_t nbytes) {
       encBuf[6] = ((totalLength >> 8) & 0xff);
       encBuf[7] = ((totalLength >> 0) & 0xff);
     }
+    // {
+    //   static int total = 0;
+    //   static time_t curtime = 0;
+    //   time_t newtime;
+    //   time(&newtime);
+    //   if (newtime != curtime) {
+    //     curtime = newtime;
+    //     printf("%i bytes per second\n", total);
+    //     total = 0;
+    //   }
+    //   total += length + offset;
+    // }
     return length + offset;
   } else {
+    std::vector<uint8_t> msgBytes;
     sendQueue.pop_front();
     msgBytes.push_back(msg.channel);
     msgBytes.push_back(msg.flags);
@@ -545,7 +565,7 @@ void AaCommunicator::startThread(
 }
 
 void AaCommunicator::dataPump(ThreadDescriptor *t) {
-  int bufSize = 100 * 1024;
+  const int bufSize = 100 * 1024;
   char buffer[bufSize];
 
   signal(SIGUSR1, [](int) {});

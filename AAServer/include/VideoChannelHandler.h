@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ChannelHandler.h"
-#include <gst/gst.h>
+#include "VidCapture.h"
 
 class VideoChannelHandler : public ChannelHandler {
   bool gotSetupResponse;
@@ -15,9 +15,8 @@ class VideoChannelHandler : public ChannelHandler {
   void expectSetupResponse();
   void sendStartIndication();
 
-  GstElement *pipeline;
+  VidCapture vidCapture;
 
-  static GstFlowReturn new_sample(GstElement *sink, VideoChannelHandler *_this);
   void openChannel();
 
 public:

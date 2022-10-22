@@ -3,14 +3,20 @@ project (AAServer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(-g -rdynamic -O3)
+
 find_package(Boost 1.67 REQUIRED COMPONENTS filesystem program_options)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(fmt REQUIRED)
-pkg_check_modules (gst REQUIRED IMPORTED_TARGET gstreamer-base-1.0)
 pkg_check_modules (LIBUSBGX REQUIRED IMPORTED_TARGET libusbgx)
 pkg_check_modules (LIBPCAP REQUIRED IMPORTED_TARGET libpcap)
+pkg_check_modules (LIBAVDEVICE REQUIRED IMPORTED_TARGET libavdevice)
+pkg_check_modules (LIBAVCODEC REQUIRED IMPORTED_TARGET libavcodec)
+pkg_check_modules (LIBAVFORMAT REQUIRED IMPORTED_TARGET libavformat)
+pkg_check_modules (LIBAVUTIL REQUIRED IMPORTED_TARGET libavutil)
+pkg_check_modules (LIBAVFILTER REQUIRED IMPORTED_TARGET libavfilter)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(include)
@@ -39,6 +45,9 @@ add_executable(AAServer main.cpp
     src/DefaultChannelHandler.cpp
     src/VideoChannelHandler.cpp
     src/InputChannelHandler.cpp
+    src/VidCapture.cpp
+    src/InputSender.cpp
+    src/Uhid.cpp
     ${PROTO_SRCS}
     ${PROTO_HDRS}
     ${BACKWARD_ENABLE}
@@ -51,7 +60,11 @@ target_link_libraries(AAServer Boost::program_options)
 target_link_libraries(AAServer PkgConfig::LIBUSBGX)
 target_link_libraries(AAServer OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(AAServer protobuf::libprotobuf)
-target_link_libraries(AAServer PkgConfig::gst)
+target_link_libraries(AAServer PkgConfig::LIBAVFORMAT)
+target_link_libraries(AAServer PkgConfig::LIBAVUTIL)
+target_link_libraries(AAServer PkgConfig::LIBAVDEVICE)
+target_link_libraries(AAServer PkgConfig::LIBAVCODEC)
+target_link_libraries(AAServer PkgConfig::LIBAVFILTER)
 target_link_libraries(AAServer PkgConfig::LIBPCAP)
 target_link_libraries(AAServer fmt::fmt)
 include_directories(${LIBUSBGX_INCLUDE_DIRS})

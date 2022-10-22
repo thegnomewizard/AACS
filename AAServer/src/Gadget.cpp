@@ -10,6 +10,7 @@
 using namespace std;
 
 Gadget::Gadget(const Library &lib, int vid, int pid, const string &name) {
+  printf("Creating gadget: %s\n", name.c_str());
   checkUsbgError(usbg_create_gadget_vid_pid(lib.getState(), name.c_str(), vid,
                                             pid, &gadget));
 }

@@ -35,9 +35,17 @@ ssize_t ModeSwitcher::handleSwitchMessage(int fd, const void *buf,
       } else if (setup.bRequest == 53) {
         std::cout << "Got 53, exit" << std::endl;
         return 0;
+      } else {
+        std::cout << "Unhandled setup: ";
+        for (int i = 0; i < nbytes; i++)
+          printf(" %.2x", ((char*)buf)[i]);
+        std::cout << std::endl;
       }
     } else {
-      std::cout << std::string((char *)buf, nbytes) << std::endl;
+      std::cout << "Unknown event type: ";
+      for (int i = 0; i < nbytes; i++)
+        printf(" %.2x", ((char*)buf)[i]);
+      std::cout << std::endl;
     }
   }
   return nbytes;

@@ -12,7 +12,6 @@
 #include "utils.h"
 #include <boost/program_options.hpp>
 #include <csignal>
-#include <gst/gst.h>
 #include <iostream>
 #include <iterator>
 #include <stdexcept>
@@ -47,7 +46,6 @@ int main(int argc, char *argv[]) {
     dumpfile = vm["dumpfile"].as<string>();
   }
   signal(SIGINT, signal_handler);
-  gst_init(&argc, &argv);
   Library lib(configFsBasePath);
   ModeSwitcher::handleSwitchToAccessoryMode(lib);
   AaCommunicator aac(lib, dumpfile);
@@ -84,39 +82,39 @@ int main(int argc, char *argv[]) {
   SocketCommunicator sc("./socket");
   int pi = 0;
   int clientCount = 0;
-  sc.newClient.connect([&](SocketClient *scl) {
-    clients.insert({scl, clientCount++});
-    cout << "connect: " << clients[scl] << endl;
-    scl->gotPacket.connect([&aac, scl, &pi, &clients](const Packet &p) {
-      if (p.packetType == PacketType::GetChannelNumberByChannelType) {
-        auto channelId =
-            aac.getChannelNumberByChannelType((ChannelType)p.channelNumber);
-        cout << "get channel: " << (int)p.channelNumber << "->"
-             << (int)channelId << endl;
-        scl->sendMessage({channelId});
-      } else if (p.packetType == PacketType::RawData) {
-        try {
-          aac.sendToChannel(clients[scl], p.channelNumber, p.specific, p.data);
-        } catch (exception &ex) {
-          cout << "disconnect client: " << clients[scl] << " " << ex.what()
-               << endl;
-          aac.disconnected(clients[scl]);
-          clients.erase(scl);
-          throw;
-        }
-      } else if (p.packetType == PacketType::GetServiceDescriptor) {
-        cout << "get service descriptor" << endl;
-        scl->sendMessage(aac.getServiceDescriptor());
-      } else {
-        throw runtime_error("Unknown packetType");
-      }
-    });
-    scl->disconnected.connect([&aac, &clients, scl]() {
-      cout << "disconnected: " << clients[scl] << endl;
-      aac.disconnected(clients[scl]);
-      clients.erase(scl);
-    });
-  });
+  // sc.newClient.connect([&](SocketClient *scl) {
+  //   clients.insert({scl, clientCount++});
+  //   cout << "connect: " << clients[scl] << endl;
+  //   scl->gotPacket.connect([&aac, scl, &pi, &clients](const Packet &p) {
+  //     if (p.packetType == PacketType::GetChannelNumberByChannelType) {
+  //       auto channelId =
+  //           aac.getChannelNumberByChannelType((ChannelType)p.channelNumber);
+  //       cout << "get channel: " << (int)p.channelNumber << "->"
+  //            << (int)channelId << endl;
+  //       scl->sendMessage({channelId});
+  //     } else if (p.packetType == PacketType::RawData) {
+  //       try {
+  //         aac.sendToChannel(clients[scl], p.channelNumber, p.specific, p.data);
+  //       } catch (exception &ex) {
+  //         cout << "disconnect client: " << clients[scl] << " " << ex.what()
+  //              << endl;
+  //         aac.disconnected(clients[scl]);
+  //         clients.erase(scl);
+  //         throw;
+  //       }
+  //     } else if (p.packetType == PacketType::GetServiceDescriptor) {
+  //       cout << "get service descriptor" << endl;
+  //       scl->sendMessage(aac.getServiceDescriptor());
+  //     } else {
+  //       throw runtime_error("Unknown packetType");
+  //     }
+  //   });
+  //   scl->disconnected.connect([&aac, &clients, scl]() {
+  //     cout << "disconnected: " << clients[scl] << endl;
+  //     aac.disconnected(clients[scl]);
+  //     clients.erase(scl);
+  //   });
+  // });
   mre.wait();
   return 0;
 }

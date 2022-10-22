@@ -73,9 +73,3 @@ void aa_runtime_error::printTrace(std::ostream &ostr) const {
   p.address = true;
   p.print(st, ostr);
 }
-
-void GstCheck(gboolean returnCode, int line) {
-  if (returnCode != TRUE)
-    throw runtime_error("GStreamer function call failed at line " +
-                        to_string(line));
-}
