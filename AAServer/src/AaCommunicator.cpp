@@ -74,10 +74,10 @@ void AaCommunicator::sendMessage(uint8_t channel, uint8_t flags,
   {
     std::unique_lock<std::mutex> lk(sendQueueMutex);
     sendQueue.push_back(msg);
-    if (sendQueue.size() > 1) {
-      printf("[%i]", sendQueue.size());
-    } //else printf("<%i>", (int)msg.content.size());
-      fflush(stdout);
+    // if (sendQueue.size() > 1) {
+    //   printf("[%i]", sendQueue.size());
+    // } //else printf("<%i>", (int)msg.content.size());
+    //   fflush(stdout);
   }
   sendQueueNotEmpty.notify_all();
 }

@@ -113,7 +113,7 @@ public:
     :_encoder(nullptr)
     {
         const AVCodec *codec = avcodec_find_encoder_by_name(
-#define SOFTWARE_ENCODER
+//#define SOFTWARE_ENCODER
 #ifdef SOFTWARE_ENCODER
         "libx264"
 #else
@@ -132,7 +132,9 @@ public:
         _encoder->time_base = av_inv_q(source.Get()->framerate);
         _encoder->framerate = source.Get()->framerate;
         av_opt_set(_encoder->priv_data, "profile", "baseline", 0);
-        _encoder->bit_rate = 800000;
+        _encoder->bit_rate = 6400000;
+        _encoder->keyint_min = 1;
+        _encoder->gop_size = 30;
 #ifdef SOFTWARE_ENCODER
         av_opt_set(_encoder->priv_data, "x264opts", "no-mbtree:keyint=30:min-keyint=1:force-cfr=1:sync-lookahead=0", 0);
 #else
